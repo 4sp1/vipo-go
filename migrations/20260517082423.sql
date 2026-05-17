@@ -1,0 +1,6 @@
+CREATE TABLE notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    note TEXT NOT NULL,
+    pomodoro_state INTEGER NOT NULL,
+    created_at TEXT NOT NULL
+);

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/vipo-org/vipo-server/internal/adapter/state"
 	"github.com/vipo-org/vipo-server/internal/domain/state/note"
@@ -25,4 +26,13 @@ type port struct {
 	db *sql.DB
 }
 
-func (p *port) AddNote(ctx context.Context, note note.State) error
+func (p *port) AddNote(ctx context.Context, n note.State) error {
+	_, err := p.db.ExecContext(ctx,
+		"INSERT INTO notes (note, pomodoro_state, created_at) VALUES (?, ?, ?)",
+		n.Note, n.Pomodoro, n.CreatedAt.Format(time.RFC3339),
+	)
+	if err != nil {
+		return fmt.Errorf("insert note: %w", err)
+	}
+	return nil
+}

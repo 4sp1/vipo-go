@@ -4,8 +4,23 @@ import (
 	"context"
 
 	"github.com/vipo-org/vipo-server/internal/domain/state/note"
+	"github.com/vipo-org/vipo-server/internal/domain/state/pomodoro"
 )
+
+type ListNotesParams struct {
+	PomodoroState *pomodoro.State
+	Limit         int
+	Offset        int
+}
+
+type NoteList struct {
+	Notes []note.State
+	Total int
+}
 
 type Repository interface {
 	AddNote(ctx context.Context, note note.State) error
+	ListNotes(ctx context.Context, params ListNotesParams) (NoteList, error)
+	GetNote(ctx context.Context, id int64) (note.State, error)
+	DeleteNote(ctx context.Context, id int64) error
 }

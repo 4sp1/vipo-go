@@ -7,6 +7,7 @@ import (
 )
 
 type State struct {
+	ID        int64
 	Note      string
 	Pomodoro  pomodoro.State
 	CreatedAt time.Time

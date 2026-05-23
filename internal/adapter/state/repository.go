@@ -21,6 +21,6 @@ type NoteList struct {
 type Repository interface {
 	AddNote(ctx context.Context, note note.State) error
 	ListNotes(ctx context.Context, params ListNotesParams) (NoteList, error)
-	GetNote(ctx context.Context, id int64) (note.State, error)
-	DeleteNote(ctx context.Context, id int64) error
+	GetNote(ctx context.Context, id note.ID) (note.State, error)
+	DeleteNote(ctx context.Context, id note.ID) error
 }

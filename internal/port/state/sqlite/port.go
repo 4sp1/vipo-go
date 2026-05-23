@@ -90,7 +90,7 @@ func (p *port) ListNotes(ctx context.Context, params state.ListNotesParams) (sta
 	}, rows.Err()
 }
 
-func (p *port) GetNote(ctx context.Context, id int64) (note.State, error) {
+func (p *port) GetNote(ctx context.Context, id note.ID) (note.State, error) {
 	var n note.State
 	var createdAtStr string
 
@@ -114,7 +114,7 @@ func (p *port) GetNote(ctx context.Context, id int64) (note.State, error) {
 	return n, nil
 }
 
-func (p *port) DeleteNote(ctx context.Context, id int64) error {
+func (p *port) DeleteNote(ctx context.Context, id note.ID) error {
 	result, err := p.db.ExecContext(ctx, "DELETE FROM notes WHERE id = ?", id)
 	if err != nil {
 		return fmt.Errorf("delete note: %w", err)

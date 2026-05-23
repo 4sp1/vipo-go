@@ -3,46 +3,40 @@ package log
 import "time"
 
 type Entry struct {
-	Event     Event
-	Message   Message
+	Action    Action
+	Session   Session
+	Payload   Message
 	Timestamp time.Time
 }
+
+type Action int
+
+const (
+	ActionUnknown Action = iota
+	ActionStart
+	ActionPause
+	ActionReset
+	ActionExpire
+	ActionResume
+	ActionSelect
+	ActionNewNote
+)
+
+type Session int
+
+const (
+	SessionUnknown Session = iota
+	SessionWork
+	SessionShortBreak
+	SessionLongBreak
+)
 
 type Message interface {
 	isMessage()
 }
-
-type MessageAnyTimer struct{}
-
-func (m MessageAnyTimer) isMessage()
 
 type MessageNewNote struct {
 	Note string
 }
 
 func (m MessageNewNote) isMessage()
-
-type Event int
-
-const (
-	EventUnknown Event = iota
-	EventStartWork
-	EventPauseWork
-	EventResetWork
-	EventTimerWork
-	EventResumeWork
-	EventSelectWork
-	EventStartShortBreak
-	EventPauseShortBreak
-	EventResetShortBreak
-	EventTimerShortBreak
-	EventResumeShortBreak
-	EventSelectShortBreak
-	EventStartLongBreak
-	EventPauseLongBreak
-	EventResetLongBreak
-	EventTimerLongBreak
-	EventResumeLongBreak
-	EventSelectLongBreak
-	EventNewNote
-)

@@ -31,15 +31,18 @@ const (
 	EventResetWork
 	EventTimerWork
 	EventResumeWork
+	EventSelectWork
 	EventStartShortBreak
 	EventPauseShortBreak
 	EventResetShortBreak
 	EventTimerShortBreak
 	EventResumeShortBreak
+	EventSelectShortBreak
 	EventStartLongBreak
 	EventPauseLongBreak
 	EventResetLongBreak
 	EventTimerLongBreak
 	EventResumeLongBreak
+	EventSelectLongBreak
 	EventNewNote
 )

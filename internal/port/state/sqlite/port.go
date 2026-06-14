@@ -29,7 +29,7 @@ type port struct {
 func (p *port) AddNote(ctx context.Context, n note.State) error {
 	_, err := p.db.ExecContext(ctx,
 		"INSERT INTO notes (note, pomodoro_state, created_at) VALUES (?, ?, ?)",
-		n.Note, n.Pomodoro, n.CreatedAt.Format(time.RFC3339),
+		n.Note, n.Pomodoro, n.CreatedAt.Unix(),
 	)
 	if err != nil {
 		return fmt.Errorf("insert note: %w", err)

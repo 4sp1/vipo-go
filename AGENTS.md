@@ -64,8 +64,8 @@ No tests exist yet.
 
 ## Conventions
 
-- **Commit style:** Conventional commits (`feat(scope):`, `refactor(scope):`, `docs(plan):`, `chore(domain):`).
-- **VCS:** Jujutsu (`jj`), not raw git. Use `jj describe` for commits, `jj new` for new changes.
+- **Commit style:** Ultra-compressed conventional commits via [caveman-commit](https://github.com/malikbenkirane/skilldrift) skill — subject ≤50 chars, body only when "why" isn't obvious. Styles: `feat(scope):`, `refactor(scope):`, `docs(plan):`, `chore(domain):`.
+- **VCS:** Jujutsu (`jj`), not raw git. Use [core-commands](https://github.com/malikbenkirane/skilldrift) skill for shell commands, especially jj/git operations.
 - **Package naming:** Packages are named after their domain concept (`note`, `pomodoro`, `log`), not after patterns (`models`, `entities`).
 - **Type naming:** Domain types use `State` for aggregate roots (e.g., `note.State`), enums use the type name directly (e.g., `pomodoro.State`, `log.Action`, `log.Session`).
 - **Error wrapping:** All errors use `fmt.Errorf("verb: %w", err)` pattern — no sentinel errors, no custom error types yet.

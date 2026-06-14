@@ -89,12 +89,12 @@ func (p *port) ListNotes(ctx context.Context, params state.ListNotesParams) (sta
 
 func (p *port) GetNote(ctx context.Context, id note.ID) (note.State, error) {
 	var n note.State
-	var createdAtStr string
+	var createdAtUnix int64
 
 	err := p.db.QueryRowContext(ctx,
 		"SELECT id, note, pomodoro_state, created_at FROM notes WHERE id = ?",
 		id,
-	).Scan(&n.ID, &n.Note, &n.Pomodoro, &createdAtStr)
+	).Scan(&n.ID, &n.Note, &n.Pomodoro, &createdAtUnix)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -103,10 +103,7 @@ func (p *port) GetNote(ctx context.Context, id note.ID) (note.State, error) {
 		return note.State{}, fmt.Errorf("get note: %w", err)
 	}
 
-	n.CreatedAt, err = time.Parse(time.RFC3339, createdAtStr)
-	if err != nil {
-		return note.State{}, fmt.Errorf("parse created_at: %w", err)
-	}
+	n.CreatedAt = time.Unix(createdAtUnix, 0)
 
 	return n, nil
 }

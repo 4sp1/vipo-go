@@ -77,3 +77,13 @@ No tests exist yet.
 - The `pomodoro_state` column stores Go's iota integer values (0, 1, 2), not the string names from OpenAPI. Ensure the translation layer handles this correctly when building HTTP handlers.
 - `log.Action` includes `ActionUnknown` (iota 0) and `ActionNewNote` — these don't map to OpenAPI endpoints: `ActionUnknown` is a zero-value sentinel, and `ActionNewNote` is handled by the notes CRUD, not a log endpoint.
 - Plans in `docs/plans/` follow a specific task format with checkboxes — use the `complete-plan-execution` skill when implementing them.
+
+## OAPI Code Generation
+
+- **Generator:** oapi-codegen v2 (managed via `go tool`)
+- **Config files:** `internal/port/oapi/cfg.yaml` (types), `internal/port/oapi/strict.cfg.yaml` (strict server + std-http handler)
+- **Generation command:** `go generate ./internal/port/oapi/`
+- **Generated files:** `oapi_types.gen.go`, `oapi_server.gen.go` — do NOT edit these; regenerate instead
+- **StrictServerInterface:** Router-agnostic Go interface. Service layer implements this to provide typed HTTP handlers.
+- **Translation layer:** `internal/port/oapi/http/translate.go` converts between OAPI string enums and domain int enums.
+- **Important:** Domain types use int iota (`pomodoro.State`, `log.Action`, `log.Session`). OAPI types use string enums (`PomodoroState`, `LogAction`). The translation layer bridges this gap.

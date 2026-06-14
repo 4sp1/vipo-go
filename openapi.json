@@ -259,6 +259,65 @@
             "type": "string"
           }
         }
+      },
+      "LogAction": {
+        "type": "string",
+        "enum": ["start", "pause", "reset", "expire", "resume", "select"],
+        "description": "Timer event action. 'new_note' is excluded — use POST /notes instead."
+      },
+      "CreateLogEntryRequest": {
+        "type": "object",
+        "required": ["action", "session"],
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/LogAction"
+          },
+          "session": {
+            "$ref": "#/components/schemas/PomodoroState"
+          },
+          "payload": {
+            "type": "object",
+            "description": "Optional action-specific data"
+          }
+        }
+      },
+      "LogEntry": {
+        "type": "object",
+        "required": ["id", "action", "session", "timestamp"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "action": {
+            "$ref": "#/components/schemas/LogAction"
+          },
+          "session": {
+            "$ref": "#/components/schemas/PomodoroState"
+          },
+          "payload": {
+            "type": "object",
+            "description": "Optional action-specific data"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "LogEntryList": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LogEntry"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
       }
     }
   }

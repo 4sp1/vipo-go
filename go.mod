@@ -2,12 +2,16 @@ module github.com/4sp1/vipo-go
 
 go 1.26.2
 
-require github.com/glebarez/go-sqlite v1.22.0
+require (
+	github.com/getkin/kin-openapi v0.135.0
+	github.com/glebarez/go-sqlite v1.22.0
+	github.com/oapi-codegen/runtime v1.4.1
+)
 
 require (
+	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/getkin/kin-openapi v0.135.0 // indirect
 	github.com/go-openapi/jsonpointer v0.22.4 // indirect
 	github.com/go-openapi/swag/jsonname v0.25.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -22,7 +26,6 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/speakeasy-api/jsonpath v0.6.3 // indirect
 	github.com/speakeasy-api/openapi v1.19.2 // indirect
-	github.com/ugorji/go/codec v1.2.12 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/woodsbury/decimal128 v1.4.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect

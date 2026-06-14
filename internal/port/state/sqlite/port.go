@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/vipo-org/vipo-server/internal/adapter/state"
-	"github.com/vipo-org/vipo-server/internal/domain/state/note"
+	"github.com/4sp1/vipo-go/internal/adapter/state"
+	"github.com/4sp1/vipo-go/internal/domain/state/note"
 
 	_ "github.com/glebarez/go-sqlite"
 )

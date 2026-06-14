@@ -3,8 +3,8 @@ package state
 import (
 	"context"
 
-	"github.com/vipo-org/vipo-server/internal/domain/state/note"
-	"github.com/vipo-org/vipo-server/internal/domain/state/pomodoro"
+	"github.com/4sp1/vipo-go/internal/domain/state/note"
+	"github.com/4sp1/vipo-go/internal/domain/state/pomodoro"
 )
 
 type ListNotesParams struct {

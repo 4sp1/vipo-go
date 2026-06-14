@@ -1,4 +1,4 @@
-module github.com/vipo-org/vipo-server
+module github.com/4sp1/vipo-go
 
 go 1.26.2
 

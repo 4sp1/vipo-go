@@ -51,16 +51,7 @@ go get github.com/oapi-codegen/runtime
 
 The strict server generated code imports `github.com/oapi-codegen/runtime` for strict handler types.
 
-- [ ] **Step 3: Verify dependencies compile**
-
-Run:
-```bash
-go build ./...
-```
-
-Expected: Success (no errors)
-
-- [ ] **Step 4: Commit with caveman-commit**
+- [ ] **Step 3: Commit with caveman-commit**
 
 ```
 chore(deps): add oapi-codegen and runtime
@@ -143,7 +134,7 @@ Expected: Two files created — `oapi_types.gen.go` and `oapi_server.gen.go`. No
 
 Run:
 ```bash
-go build ./...
+go build ./internal/port/oapi
 ```
 
 Expected: Success (no errors)

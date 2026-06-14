@@ -6,7 +6,7 @@
 
 **Architecture:** oapi-codegen reads `openapi.json` and produces Go types + a strict server interface under `internal/port/oapi/`. A hand-written translation layer in `internal/port/oapi/http/` converts between generated string-based enums (`PomodoroState`, `LogAction`) and domain int-based enums (`pomodoro.State`, `log.Action`), plus RFC3339 ↔ `time.Time` helpers. Two generation configs: one for models, one for the strict server interface.
 
-**Tech Stack:** Go 1.26.2, oapi-codegen v2, gorilla/mux (required by strict-server generation; `StrictServerInterface` itself is router-agnostic), github.com/oapi-codegen/runtime
+**Tech Stack:** Go 1.26.2, oapi-codegen v2, stdlib `net/http` (server backend for generated handler wiring), github.com/oapi-codegen/runtime
 
 ---
 
@@ -15,10 +15,10 @@
 ```
 internal/port/oapi/
 ├── cfg.yaml                  # oapi-codegen config: types only
-├── strict.cfg.yaml           # oapi-codegen config: strict server + gorilla handler
+├── strict.cfg.yaml           # oapi-codegen config: strict server + std-http handler
 ├── gen.go                    # go:generate directives (package oapi)
 ├── oapi_types.gen.go         # generated — models (Note, NoteList, CreateNoteRequest, PomodoroState, Error, LogAction, CreateLogEntryRequest, LogEntry, LogEntryList)
-└── oapi_server.gen.go        # generated — StrictServerInterface, request/response objects, gorilla handler
+└── oapi_server.gen.go        # generated — StrictServerInterface, request/response objects, net/http handler
 
 internal/port/oapi/http/
 ├── translate.go              # PomodoroState ↔ pomodoro.State, LogAction ↔ log.Action, Session ↔ log.Session, RFC3339 ↔ time.Time
@@ -51,16 +51,7 @@ go get github.com/oapi-codegen/runtime
 
 The strict server generated code imports `github.com/oapi-codegen/runtime` for strict handler types.
 
-- [ ] **Step 3: Add gorilla/mux dependency**
-
-Run:
-```bash
-go get github.com/gorilla/mux
-```
-
-The strict server config uses `gorilla-server: true` — the generated handler code imports `github.com/gorilla/mux`. The `StrictServerInterface` itself is router-agnostic.
-
-- [ ] **Step 4: Verify dependencies compile**
+- [ ] **Step 3: Verify dependencies compile**
 
 Run:
 ```bash
@@ -69,10 +60,10 @@ go build ./...
 
 Expected: Success (no errors)
 
-- [ ] **Step 5: Commit with caveman-commit**
+- [ ] **Step 4: Commit with caveman-commit**
 
 ```
-chore(deps): add oapi-codegen, runtime, gorilla/mux
+chore(deps): add oapi-codegen and runtime
 ```
 
 Use `jj describe` with temp file pattern from core-commands skill, then `jj new`.
@@ -104,13 +95,13 @@ Create `internal/port/oapi/strict.cfg.yaml`:
 ```yaml
 package: oapi
 generate:
-  gorilla-server: true
+  std-http-server: true
   strict-server: true
   embedded-spec: true
 output: oapi_server.gen.go
 ```
 
-Note: `gorilla-server: true` is required by oapi-codegen to generate the strict server handler wiring. The `StrictServerInterface` is router-agnostic. `embedded-spec: true` embeds the OpenAPI JSON for serving via `/openapi.json` endpoint later.
+Note: `std-http-server: true` generates `net/http` handler wiring alongside the `StrictServerInterface`. oapi-codegen requires a server backend to generate the strict interface — `std-http-server` aligns with the project's intended router choice. The interface itself is router-agnostic. `embedded-spec: true` embeds the OpenAPI JSON for serving via `/openapi.json` endpoint later.
 
 - [ ] **Step 3: Create the generate directive file**
 
@@ -679,7 +670,7 @@ Add the following to `AGENTS.md` after the `## Gotchas` section:
 ## OAPI Code Generation
 
 - **Generator:** oapi-codegen v2 (managed via `go tool`)
-- **Config files:** `internal/port/oapi/cfg.yaml` (types), `internal/port/oapi/strict.cfg.yaml` (strict server + gorilla handler)
+- **Config files:** `internal/port/oapi/cfg.yaml` (types), `internal/port/oapi/strict.cfg.yaml` (strict server + std-http handler)
 - **Generation command:** `go generate ./internal/port/oapi/`
 - **Generated files:** `oapi_types.gen.go`, `oapi_server.gen.go` — do NOT edit these; regenerate instead
 - **StrictServerInterface:** Router-agnostic Go interface. Service layer implements this to provide typed HTTP handlers.
@@ -709,7 +700,7 @@ Use `jj describe` with temp file pattern from core-commands skill, then `jj new`
 
 ## Notes
 
-- `gorilla-server: true` in `strict.cfg.yaml` is required by oapi-codegen to generate the `StrictServerInterface`. The interface itself is router-agnostic. When routing is wired up (separate issue), the gorilla handler code will be used.
+- `std-http-server: true` in `strict.cfg.yaml` generates `net/http` handler wiring alongside the `StrictServerInterface`. oapi-codegen requires a server backend to emit the strict interface — `std-http-server` was chosen because it matches the project's intended router (stdlib `net/http`). The interface itself is router-agnostic. The generated handler wiring will be wired up in a separate issue.
 - The OpenAPI spec includes log endpoints (`CreateLogEntry`, `ListLogEntries`) and their types (`LogAction`, `CreateLogEntryRequest`, `LogEntry`, `LogEntryList`). These are generated alongside the note types — they'll be used in a future issue for log endpoint wiring.
 - `ActionUnknown` and `ActionNewNote` in the domain `log.Action` enum are not in the OpenAPI `LogAction` enum. The `LogActionFromDomain` function returns an error for these values since they have no OAPI equivalent.
 - Domain `log.Session` maps to the same OAPI `PomodoroState` string values as domain `pomodoro.State`. The translation layer has separate functions for each domain type.

@@ -31,7 +31,7 @@ internal/
 - `log.Entry` uses a sealed interface pattern (`Message` with `isMessage()` unexported method) for extensible event payloads. Currently only `MessageNewNote` exists.
 - `log.Action` and `log.Session` are separate types from `pomodoro.State` — they're distinct domain concepts even though they share similar values.
 - SQLite uses `go-sqlite` (pure-Go driver from `modernc.org/sqlite`), no CGo required.
-- Timestamps stored as `TEXT` in RFC3339 format, parsed manually in the adapter layer.
+- Timestamps stored as `INTEGER` in Unix seconds, parsed manually in the adapter layer. Seconds precision (no nanoseconds). All times stored/queried in UTC.
 - Empty slices return `[]note.State{}` not `nil` (see `ListNotes` in `port.go`).
 
 ## Commands

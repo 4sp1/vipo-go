@@ -68,15 +68,12 @@ func (p *port) ListNotes(ctx context.Context, params state.ListNotesParams) (sta
 	var notes []note.State
 	for rows.Next() {
 		var n note.State
-		var createdAtStr string
-		err := rows.Scan(&n.ID, &n.Note, &n.Pomodoro, &createdAtStr)
+		var createdAtUnix int64
+		err := rows.Scan(&n.ID, &n.Note, &n.Pomodoro, &createdAtUnix)
 		if err != nil {
 			return state.NoteList{}, fmt.Errorf("scan note: %w", err)
 		}
-		n.CreatedAt, err = time.Parse(time.RFC3339, createdAtStr)
-		if err != nil {
-			return state.NoteList{}, fmt.Errorf("parse created_at: %w", err)
-		}
+		n.CreatedAt = time.Unix(createdAtUnix, 0)
 		notes = append(notes, n)
 	}
 

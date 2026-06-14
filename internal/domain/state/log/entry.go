@@ -39,4 +39,4 @@ type MessageNewNote struct {
 	Note string
 }
 
-func (m MessageNewNote) isMessage()
+func (m MessageNewNote) isMessage() {}

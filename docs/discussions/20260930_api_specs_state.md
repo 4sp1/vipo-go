@@ -97,6 +97,92 @@ Recommendation: **B**, matching current conventions (ports named after
 domain concept, one port per aggregate), with `from/to` needing a
 `LogParams` type with `time.Time` fields.
 
+### Settled decisions (grill-me, 2026-09-30)
+
+Conclusions recorded here are ground basis for future plan files.
+
+**Structure**
+
+- Two ports, one per aggregate, in **split adapter packages**:
+  `adapter/state/note` and `adapter/state/log` (mirroring
+  `domain/state/{note,log}`).
+- Ports renamed in favor of consistency; both are named after the storage
+  concept they implement:
+  - **`note.Store`** (notes; renamed from `Repository`)
+  - **`log.EventLog`** (log entries)
+- Log port is **append-only**: only `AddEntry` and `ListEntries` — no
+  `GetEntry` / `DeleteEntry` (the spec defines no such endpoints).
+
+**Interfaces**
+
+```go
+package note
+
+type ListParams struct {
+    PomodoroState *pomodoro.State
+    Limit, Offset int
+}
+
+type List struct {       // entity name appears only where unambiguous
+    Notes []note.State
+    Total int
+}
+
+type Store interface {
+    AddNote(ctx context.Context, note note.State) error
+    ListNotes(ctx context.Context, params ListParams) (List, error)
+    GetNote(ctx context.Context, id note.ID) (note.State, error)
+    DeleteNote(ctx context.Context, id note.ID) error
+}
+
+var ErrNotFound = errors.New("adapter: note not found")
+```
+
+```go
+package log
+
+type ListParams struct {
+    Action         *log.Action
+    Session        *log.Session
+    From, To       *time.Time   // UTC only, seconds precision
+    Limit, Offset  int
+}
+
+type EntryList struct {
+    Entries []log.Entry
+    Total   int
+}
+
+type EventLog interface {
+    AddEntry(ctx context.Context, entry log.Entry) error
+    ListEntries(ctx context.Context, params ListParams) (EntryList, error)
+}
+
+var ErrNotFound = errors.New("adapter: log entry not found")
+```
+
+**Error taxonomy**
+
+- Typed errors **declared in the adapter packages**, kept out of domain:
+  `note.ErrNotFound`, `log.ErrNotFound` (one per package).
+- Ports match failures via `errors.Is`; the svc layer translates to
+  HTTP 404.
+
+**Conversion discipline (from/to everywhere)**
+
+- Enums: HTTP layer already converts via `translate.go`; the **SQLite
+  port must do the same at the storage boundary** — scan into `int64`
+  and convert through validating storage-to-domain functions instead of
+  scanning raw DB ints into `pomodoro.State` directly.
+- Converter names (unexported, inside `port/state/sqlite`):
+  `PomodoroStateFromStorage(int64) (pomodoro.State, error)`,
+  `LogActionFromStorage(int64) (log.Action, error)`,
+  `LogSessionFromStorage(int64) (log.Session, error)`.
+  Unknown storage values become errors.
+- Time: `date-time` strings parse at the HTTP boundary; **`time.Time`
+  is the port boundary type, UTC only, seconds precision** at this
+  stage. Unix-second storage conversion stays inside the sqlite port.
+
 ## 4. Cross-check with issue 17 spec comparison
 
 - Spec (local and flutter @ c1a6ac2) match exactly; nothing to fix.
@@ -104,8 +190,3 @@ domain concept, one port per aggregate), with `from/to` needing a
   generate (verified against `oapi_types.gen.go` Action constants).
 - `total` field in NoteList/LogEntryList: repository already returns it
   (`COUNT(*)` query in `port/state/sqlite/port.go:53`) — worth keeping.
-- Storage: migrations create both `notes` and `log_entries` with
-  `INTEGER` timestamps, nulling the AGENTS.md "TEXT RFC3339" claim (docs
-  need update, not code).
-- sqlite driver is `glebarez/go-sqlite` here (AGENTS.md says `modernc.org`),
-  another doc drift item, not a code problem.

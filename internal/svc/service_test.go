@@ -468,7 +468,7 @@ func TestListLogEntries(t *testing.T) {
 	s := New(newRecordingNoteStore(), logs)
 
 	for i := 0; i < 5; i++ {
-		logs.AddEntry(context.Background(), domlog.Entry{
+		_, _ = logs.AddEntry(context.Background(), domlog.Entry{
 			Action:    domlog.ActionStart,
 			Session:   domlog.SessionWork,
 			Payload:   map[string]any{"index": i},
@@ -503,7 +503,7 @@ func TestListLogEntriesDefaultLimitOffset(t *testing.T) {
 	s := New(newRecordingNoteStore(), logs)
 
 	for i := 0; i < 60; i++ {
-		logs.AddEntry(context.Background(), domlog.Entry{
+		_, _ = logs.AddEntry(context.Background(), domlog.Entry{
 			Action:    domlog.ActionStart,
 			Session:   domlog.SessionWork,
 			Timestamp: time.Now(),
@@ -557,8 +557,8 @@ func TestListLogEntriesFilterByAction(t *testing.T) {
 	logs := newRecordingEventLog()
 	s := New(newRecordingNoteStore(), logs)
 
-	logs.AddEntry(context.Background(), domlog.Entry{Action: domlog.ActionStart, Session: domlog.SessionWork, Timestamp: time.Now()})
-	logs.AddEntry(context.Background(), domlog.Entry{Action: domlog.ActionPause, Session: domlog.SessionWork, Timestamp: time.Now()})
+	_, _ = logs.AddEntry(context.Background(), domlog.Entry{Action: domlog.ActionStart, Session: domlog.SessionWork, Timestamp: time.Now()})
+	_, _ = logs.AddEntry(context.Background(), domlog.Entry{Action: domlog.ActionPause, Session: domlog.SessionWork, Timestamp: time.Now()})
 
 	action := oapi.Start
 	resp, err := s.ListLogEntries(context.Background(), oapi.ListLogEntriesRequestObject{
@@ -581,8 +581,8 @@ func TestListLogEntriesFilterBySession(t *testing.T) {
 	logs := newRecordingEventLog()
 	s := New(newRecordingNoteStore(), logs)
 
-	logs.AddEntry(context.Background(), domlog.Entry{Action: domlog.ActionStart, Session: domlog.SessionWork, Timestamp: time.Now()})
-	logs.AddEntry(context.Background(), domlog.Entry{Action: domlog.ActionStart, Session: domlog.SessionShortBreak, Timestamp: time.Now()})
+	_, _ = logs.AddEntry(context.Background(), domlog.Entry{Action: domlog.ActionStart, Session: domlog.SessionWork, Timestamp: time.Now()})
+	_, _ = logs.AddEntry(context.Background(), domlog.Entry{Action: domlog.ActionStart, Session: domlog.SessionShortBreak, Timestamp: time.Now()})
 
 	session := oapi.Work
 	resp, err := s.ListLogEntries(context.Background(), oapi.ListLogEntriesRequestObject{
@@ -605,9 +605,9 @@ func TestListLogEntriesFilterByTimeRange(t *testing.T) {
 	logs := newRecordingEventLog()
 	s := New(newRecordingNoteStore(), logs)
 
-	logs.AddEntry(context.Background(), domlog.Entry{Action: domlog.ActionStart, Session: domlog.SessionWork, Timestamp: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)})
-	logs.AddEntry(context.Background(), domlog.Entry{Action: domlog.ActionStart, Session: domlog.SessionWork, Timestamp: time.Date(2026, 1, 1, 0, 1, 30, 0, time.UTC)})
-	logs.AddEntry(context.Background(), domlog.Entry{Action: domlog.ActionStart, Session: domlog.SessionWork, Timestamp: time.Date(2026, 1, 1, 0, 3, 0, 0, time.UTC)})
+	_, _ = logs.AddEntry(context.Background(), domlog.Entry{Action: domlog.ActionStart, Session: domlog.SessionWork, Timestamp: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)})
+	_, _ = logs.AddEntry(context.Background(), domlog.Entry{Action: domlog.ActionStart, Session: domlog.SessionWork, Timestamp: time.Date(2026, 1, 1, 0, 1, 30, 0, time.UTC)})
+	_, _ = logs.AddEntry(context.Background(), domlog.Entry{Action: domlog.ActionStart, Session: domlog.SessionWork, Timestamp: time.Date(2026, 1, 1, 0, 3, 0, 0, time.UTC)})
 
 	from := time.Date(2026, 1, 1, 0, 1, 0, 0, time.UTC)
 	to := time.Date(2026, 1, 1, 0, 2, 0, 0, time.UTC)
@@ -649,5 +649,144 @@ func TestListLogEntriesInvalidSession(t *testing.T) {
 	})
 	if !errors.As(err, new(*ErrInvalidSession)) {
 		t.Fatalf("expected 400 for invalid session, got err=%v", err)
+	}
+}
+
+func TestListLogEntriesFromTruncatesToSecond(t *testing.T) {
+	logs := newRecordingEventLog()
+	s := New(newRecordingNoteStore(), logs)
+
+	_, _ = logs.AddEntry(context.Background(), domlog.Entry{
+		Action:    domlog.ActionStart,
+		Session:   domlog.SessionWork,
+		Timestamp: time.Date(2026, 1, 1, 0, 0, 30, 0, time.UTC),
+	})
+
+	from := time.Date(2026, 1, 1, 0, 0, 30, 500000000, time.UTC)
+	to := time.Date(2026, 1, 1, 23, 59, 59, 0, time.UTC)
+
+	resp, err := s.ListLogEntries(context.Background(), oapi.ListLogEntriesRequestObject{
+		Params: oapi.ListLogEntriesParams{From: &from, To: &to},
+	})
+	if err != nil {
+		t.Fatalf("ListLogEntries: %v", err)
+	}
+
+	listResp, ok := resp.(oapi.ListLogEntries200JSONResponse)
+	if !ok {
+		t.Fatalf("unexpected response type: %T", resp)
+	}
+	if len(*listResp.Entries) != 1 {
+		t.Errorf("len(Entries) = %d, want 1 (from truncated to second)", len(*listResp.Entries))
+	}
+}
+
+func TestListLogEntriesToCeilsToSecond(t *testing.T) {
+	logs := newRecordingEventLog()
+	s := New(newRecordingNoteStore(), logs)
+
+	_, _ = logs.AddEntry(context.Background(), domlog.Entry{
+		Action:    domlog.ActionStart,
+		Session:   domlog.SessionWork,
+		Timestamp: time.Date(2026, 1, 1, 0, 0, 31, 0, time.UTC),
+	})
+
+	from := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2026, 1, 1, 0, 0, 30, 500000000, time.UTC)
+
+	resp, err := s.ListLogEntries(context.Background(), oapi.ListLogEntriesRequestObject{
+		Params: oapi.ListLogEntriesParams{From: &from, To: &to},
+	})
+	if err != nil {
+		t.Fatalf("ListLogEntries: %v", err)
+	}
+
+	listResp, ok := resp.(oapi.ListLogEntries200JSONResponse)
+	if !ok {
+		t.Fatalf("unexpected response type: %T", resp)
+	}
+	if len(*listResp.Entries) != 1 {
+		t.Errorf("len(Entries) = %d, want 1 (to ceiled to second)", len(*listResp.Entries))
+	}
+}
+
+func TestListLogEntriesBoundaryExactSecond(t *testing.T) {
+	logs := newRecordingEventLog()
+	s := New(newRecordingNoteStore(), logs)
+
+	_, _ = logs.AddEntry(context.Background(), domlog.Entry{
+		Action:    domlog.ActionStart,
+		Session:   domlog.SessionWork,
+		Timestamp: time.Date(2026, 1, 1, 0, 0, 30, 0, time.UTC),
+	})
+
+	from := time.Date(2026, 1, 1, 0, 0, 30, 0, time.UTC)
+	to := time.Date(2026, 1, 1, 0, 0, 30, 0, time.UTC)
+
+	resp, err := s.ListLogEntries(context.Background(), oapi.ListLogEntriesRequestObject{
+		Params: oapi.ListLogEntriesParams{From: &from, To: &to},
+	})
+	if err != nil {
+		t.Fatalf("ListLogEntries: %v", err)
+	}
+
+	listResp, ok := resp.(oapi.ListLogEntries200JSONResponse)
+	if !ok {
+		t.Fatalf("unexpected response type: %T", resp)
+	}
+	if len(*listResp.Entries) != 1 {
+		t.Errorf("len(Entries) = %d, want 1 (inclusive boundary)", len(*listResp.Entries))
+	}
+}
+
+func TestListNotesLimitBoundary(t *testing.T) {
+	s := New(newRecordingNoteStore(), &stubEventLog{})
+
+	limit := 1
+	resp, err := s.ListNotes(context.Background(), oapi.ListNotesRequestObject{
+		Params: oapi.ListNotesParams{Limit: &limit},
+	})
+	if err != nil {
+		t.Fatalf("ListNotes: %v", err)
+	}
+	if _, ok := resp.(oapi.ListNotes200JSONResponse); !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+
+	limit = 100
+	resp, err = s.ListNotes(context.Background(), oapi.ListNotesRequestObject{
+		Params: oapi.ListNotesParams{Limit: &limit},
+	})
+	if err != nil {
+		t.Fatalf("ListNotes: %v", err)
+	}
+	if _, ok := resp.(oapi.ListNotes200JSONResponse); !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+}
+
+func TestListLogEntriesLimitBoundary(t *testing.T) {
+	s := New(newRecordingNoteStore(), newRecordingEventLog())
+
+	limit := 1
+	resp, err := s.ListLogEntries(context.Background(), oapi.ListLogEntriesRequestObject{
+		Params: oapi.ListLogEntriesParams{Limit: &limit},
+	})
+	if err != nil {
+		t.Fatalf("ListLogEntries: %v", err)
+	}
+	if _, ok := resp.(oapi.ListLogEntries200JSONResponse); !ok {
+		t.Fatalf("expected 200, got %T", resp)
+	}
+
+	limit = 100
+	resp, err = s.ListLogEntries(context.Background(), oapi.ListLogEntriesRequestObject{
+		Params: oapi.ListLogEntriesParams{Limit: &limit},
+	})
+	if err != nil {
+		t.Fatalf("ListLogEntries: %v", err)
+	}
+	if _, ok := resp.(oapi.ListLogEntries200JSONResponse); !ok {
+		t.Fatalf("expected 200, got %T", resp)
 	}
 }

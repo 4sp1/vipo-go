@@ -11,35 +11,48 @@ Hexagonal / Ports & Adapters pattern:
 ```
 internal/
 ├── domain/state/          # Core domain models (zero external deps)
-│   ├── pomodoro/state.go  # Session state enum (Work, ShortBreak, LongBreak)
-│   ├── note/note.go       # Note aggregate (ID, Note text, Pomodoro state, timestamp)
-│   └── log/entry.go       # Event log entries (Action, Session, Payload, Timestamp)
+│   ├── pomodoro/state.go  # Session state enum
+│   ├── note/note.go       # Note aggregate
+│   └── log/entry.go       # Event log entries
 ├── adapter/state/
-│   └── repository.go      # Notes port definition + query types
-├── port/state/sqlite/
-│   └── port.go            # SQLite implementation of the notes port
-├── port/oapi/             # Generated OAPI types/server + http translation layer
-├── svc/                   # Service layer (currently empty)
-└── app/                   # Application wiring (currently empty)
+│   ├── note/store.go      # note.Store port interface + ErrNotFound
+│   └── log/eventlog.go    # log.EventLog port interface + ErrNotFound
+├── port/state/sqlite/     # SQLite implementation (shared *DB wrapper)
+│   ├── db.go              # New(file) → *DB, NoteStore(), EventLog(), Migrate()
+│   ├── note_store.go      # note.Store implementation
+│   ├── event_log.go       # log.EventLog implementation
+│   ├── converters.go      # *FromStorage enum converters
+│   └── migrations.go      # goose v3 Provider runner
+├── port/oapi/             # Generated OAPI types/server
+│   ├── oapi_types.gen.go / oapi_server.gen.go
+│   └── http/translate.go  # OAPI ↔ domain enum translation
+├── svc/                   # Service layer (StrictServerInterface impl)
+│   ├── service.go         # 6 handlers
+│   └── errors.go          # Validation error types
+├── app/                   # Application wiring
+│   ├── apperr/            # Error code taxonomy + Wire()
+│   ├── wire.go            # NewHandler → http.Handler
+│   └── server.go          # NewServer → *Server
+cmd/
+└── vipo-server/main.go    # cobra CLI (serve + migrate)
+migrations/
+├── embed.go               # //go:embed *.sql
+└── *.sql                  # goose-annotated migrations
 ```
 
 **Dependency direction:** `app` → `svc` → `adapter` (interface) ← `port` (implementation), `domain` is imported by all.
 
-> Planned structure (settled in `docs/discussions/20260930_api_specs_state.md`,
-> not yet implemented): split adapter packages `adapter/state/note` with
-> `note.Store` and `adapter/state/log` with `log.EventLog`, plus typed
-> `ErrNotFound` errors per adapter package. Do not treat the current single
-> `Repository` shape as final.
 
 ### Key Design Decisions
 
 - **Domain layer has zero imports** except stdlib — no external dependencies leak into domain models.
 - `pomodoro.State` is an iota-based `int` enum (not a string), stored as integer in SQLite. Maps to `work=0, short_break=1, long_break=2`.
-- `log.Entry` uses a sealed interface pattern (`Message` with `isMessage()` unexported method) for extensible event payloads. Currently only `MessageNewNote` exists.
+- `log.Entry` carries `ID`, is a plain struct with `Payload map[string]any` (free-form JSON). No sealed interface — new_note is excluded from log endpoints (handled by notes CRUD).
 - `log.Action` and `log.Session` are separate types from `pomodoro.State` — they're distinct domain concepts even though they share similar values.
 - SQLite uses `github.com/glebarez/go-sqlite` (pure-Go driver, no CGo required).
 - Timestamps stored as `INTEGER` Unix seconds, parsed manually in the adapter layer (`time.Unix(...)` at read/write). Seconds precision (no nanoseconds). All times stored/queried in UTC.
-- Empty slices return `[]note.State{}` not `nil` (see `ListNotes` in `port/state/sqlite/port.go`).
+- Empty slices return `[]note.State{}`/`[]log.Entry{}` not `nil` (see `ListNotes`/`ListEntries` in `port/state/sqlite/`).
+
 
 ## Commands
 
@@ -79,9 +92,11 @@ jj new                   # Start new change after commit
 
 ## Gotchas
 
-- `cmd/vipo-server/` and `internal/svc/` and `internal/app/` directories exist but are **empty** — no main entrypoint or HTTP handler wiring yet. The project is domain-model-first, and the server/wiring layer hasn't been built.
+- `cmd/vipo-server/main.go` uses cobra with `serve` and `migrate` subcommands. Config via viper (flag > env `VIPD_*` > defaults).
+- The svc layer implements `oapi.StrictServerInterface` and returns typed errors (not HTTP response objects) for failure cases. The app layer maps these to HTTP responses via `apperr.Wire()`.
+- 500 errors are plain text (no JSON body), matching the spec which defines no 500 response. 400/404 errors use the `Error{code, message}` schema with enumerated `code` values.
 - The `pomodoro_state` column stores Go's iota integer values (0, 1, 2), not the string names from OpenAPI. Ensure the translation layer handles this correctly when building HTTP handlers.
-- `log.Action` includes `ActionUnknown` (iota 0) and `ActionNewNote` — these don't map to OpenAPI endpoints: `ActionUnknown` is a zero-value sentinel, and `ActionNewNote` is handled by the notes CRUD, not a log endpoint.
+`log.Action` includes `ActionUnknown` (iota 0) as a zero-value sentinel; unknown/removed values are rejected at the storage boundary via converters.
 - Out-of-range integers from SQLite must not flow silently into `pomodoro.State` — use validating `*FromStorage` converters at the storage boundary (see the discussion doc).
 - Plans in `docs/plans/` follow a specific task format with checkboxes — use the `complete-plan-execution` skill when implementing them.
 

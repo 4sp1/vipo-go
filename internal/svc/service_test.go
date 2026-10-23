@@ -115,8 +115,8 @@ func TestCreateNote(t *testing.T) {
 			})
 
 			if tt.wantErr {
-				if _, ok := resp.(oapi.CreateNote400JSONResponse); !ok {
-					t.Fatalf("expected 400 response, got %T", resp)
+				if !errors.As(err, new(*ErrInvalidPomodoroState)) {
+					t.Fatalf("expected ErrInvalidPomodoroState, got err=%v resp=%T", err, resp)
 				}
 				return
 			}
@@ -173,14 +173,10 @@ func TestGetNoteNotFound(t *testing.T) {
 	store := newRecordingNoteStore()
 	s := New(store, &stubEventLog{})
 
-	resp, err := s.GetNote(context.Background(), oapi.GetNoteRequestObject{Id: 999})
-	if err != nil {
-		t.Fatalf("GetNote: %v", err)
-	}
+	_, err := s.GetNote(context.Background(), oapi.GetNoteRequestObject{Id: 999})
 
-	_, ok := resp.(oapi.GetNote404JSONResponse)
-	if !ok {
-		t.Fatalf("unexpected response type: %T, want GetNote404JSONResponse", resp)
+	if !errors.Is(err, adaptNote.ErrNotFound) {
+		t.Errorf("err = %v, want adaptNote.ErrNotFound", err)
 	}
 }
 
@@ -214,14 +210,10 @@ func TestDeleteNoteNotFound(t *testing.T) {
 	store := newRecordingNoteStore()
 	s := New(store, &stubEventLog{})
 
-	resp, err := s.DeleteNote(context.Background(), oapi.DeleteNoteRequestObject{Id: 999})
-	if err != nil {
-		t.Fatalf("DeleteNote: %v", err)
-	}
+	_, err := s.DeleteNote(context.Background(), oapi.DeleteNoteRequestObject{Id: 999})
 
-	_, ok := resp.(oapi.DeleteNote404JSONResponse)
-	if !ok {
-		t.Fatalf("unexpected response type: %T, want DeleteNote404JSONResponse", resp)
+	if !errors.Is(err, adaptNote.ErrNotFound) {
+		t.Errorf("err = %v, want adaptNote.ErrNotFound", err)
 	}
 }
 
@@ -265,27 +257,19 @@ func TestListNotesInvalidLimit(t *testing.T) {
 	s := New(newRecordingNoteStore(), &stubEventLog{})
 
 	badLimit := 0
-	resp, err := s.ListNotes(context.Background(), oapi.ListNotesRequestObject{
+	_, err := s.ListNotes(context.Background(), oapi.ListNotesRequestObject{
 		Params: oapi.ListNotesParams{Limit: &badLimit},
 	})
-	if err != nil {
-		t.Fatalf("ListNotes: %v", err)
-	}
-	_, ok := resp.(listNotes400Response)
-	if !ok {
-		t.Fatalf("expected 400 for limit=0, got %T", resp)
+	if !errors.As(err, new(*ErrInvalidLimit)) {
+		t.Fatalf("expected 400 for limit=0, got err=%v", err)
 	}
 
 	bigLimit := 101
-	resp, err = s.ListNotes(context.Background(), oapi.ListNotesRequestObject{
+	_, err = s.ListNotes(context.Background(), oapi.ListNotesRequestObject{
 		Params: oapi.ListNotesParams{Limit: &bigLimit},
 	})
-	if err != nil {
-		t.Fatalf("ListNotes: %v", err)
-	}
-	_, ok = resp.(listNotes400Response)
-	if !ok {
-		t.Fatalf("expected 400 for limit=101, got %T", resp)
+	if !errors.As(err, new(*ErrInvalidLimit)) {
+		t.Fatalf("expected 400 for limit=101, got err=%v", err)
 	}
 }
 
@@ -293,15 +277,11 @@ func TestListNotesInvalidOffset(t *testing.T) {
 	s := New(newRecordingNoteStore(), &stubEventLog{})
 
 	badOffset := -1
-	resp, err := s.ListNotes(context.Background(), oapi.ListNotesRequestObject{
+	_, err := s.ListNotes(context.Background(), oapi.ListNotesRequestObject{
 		Params: oapi.ListNotesParams{Offset: &badOffset},
 	})
-	if err != nil {
-		t.Fatalf("ListNotes: %v", err)
-	}
-	_, ok := resp.(listNotes400Response)
-	if !ok {
-		t.Fatalf("expected 400 for offset=-1, got %T", resp)
+	if !errors.As(err, new(*ErrInvalidOffset)) {
+		t.Fatalf("expected 400 for offset=-1, got err=%v", err)
 	}
 }
 
@@ -336,15 +316,11 @@ func TestListNotesInvalidPomodoroState(t *testing.T) {
 	s := New(newRecordingNoteStore(), &stubEventLog{})
 
 	badState := oapi.PomodoroState("invalid")
-	resp, err := s.ListNotes(context.Background(), oapi.ListNotesRequestObject{
+	_, err := s.ListNotes(context.Background(), oapi.ListNotesRequestObject{
 		Params: oapi.ListNotesParams{PomodoroState: &badState},
 	})
-	if err != nil {
-		t.Fatalf("ListNotes: %v", err)
-	}
-	_, ok := resp.(listNotes400Response)
-	if !ok {
-		t.Fatalf("expected 400 for invalid pomodoro_state, got %T", resp)
+	if !errors.As(err, new(*ErrInvalidPomodoroState)) {
+		t.Fatalf("expected 400 for invalid pomodoro_state, got err=%v", err)
 	}
 }
 
@@ -438,15 +414,11 @@ func TestCreateLogEntryInvalidAction(t *testing.T) {
 		Session: oapi.Work,
 	}
 
-	resp, err := s.CreateLogEntry(context.Background(), oapi.CreateLogEntryRequestObject{
+	_, err := s.CreateLogEntry(context.Background(), oapi.CreateLogEntryRequestObject{
 		Body: &body,
 	})
-	if err != nil {
-		t.Fatalf("CreateLogEntry: %v", err)
-	}
-	_, ok := resp.(oapi.CreateLogEntry400JSONResponse)
-	if !ok {
-		t.Fatalf("expected 400, got %T", resp)
+	if !errors.As(err, new(*ErrInvalidLogAction)) {
+		t.Fatalf("expected 400 error, got err=%v", err)
 	}
 }
 
@@ -458,15 +430,11 @@ func TestCreateLogEntryInvalidSession(t *testing.T) {
 		Session: "invalid",
 	}
 
-	resp, err := s.CreateLogEntry(context.Background(), oapi.CreateLogEntryRequestObject{
+	_, err := s.CreateLogEntry(context.Background(), oapi.CreateLogEntryRequestObject{
 		Body: &body,
 	})
-	if err != nil {
-		t.Fatalf("CreateLogEntry: %v", err)
-	}
-	_, ok := resp.(oapi.CreateLogEntry400JSONResponse)
-	if !ok {
-		t.Fatalf("expected 400, got %T", resp)
+	if !errors.As(err, new(*ErrInvalidSession)) {
+		t.Fatalf("expected 400 error, got err=%v", err)
 	}
 }
 
@@ -565,15 +533,11 @@ func TestListLogEntriesInvalidLimit(t *testing.T) {
 	s := New(newRecordingNoteStore(), newRecordingEventLog())
 
 	badLimit := 0
-	resp, err := s.ListLogEntries(context.Background(), oapi.ListLogEntriesRequestObject{
+	_, err := s.ListLogEntries(context.Background(), oapi.ListLogEntriesRequestObject{
 		Params: oapi.ListLogEntriesParams{Limit: &badLimit},
 	})
-	if err != nil {
-		t.Fatalf("ListLogEntries: %v", err)
-	}
-	_, ok := resp.(listLogEntries400Response)
-	if !ok {
-		t.Fatalf("expected 400 for limit=0, got %T", resp)
+	if !errors.As(err, new(*ErrInvalidLimit)) {
+		t.Fatalf("expected 400 for limit=0, got err=%v", err)
 	}
 }
 
@@ -581,15 +545,11 @@ func TestListLogEntriesInvalidOffset(t *testing.T) {
 	s := New(newRecordingNoteStore(), newRecordingEventLog())
 
 	badOffset := -1
-	resp, err := s.ListLogEntries(context.Background(), oapi.ListLogEntriesRequestObject{
+	_, err := s.ListLogEntries(context.Background(), oapi.ListLogEntriesRequestObject{
 		Params: oapi.ListLogEntriesParams{Offset: &badOffset},
 	})
-	if err != nil {
-		t.Fatalf("ListLogEntries: %v", err)
-	}
-	_, ok := resp.(listLogEntries400Response)
-	if !ok {
-		t.Fatalf("expected 400 for offset=-1, got %T", resp)
+	if !errors.As(err, new(*ErrInvalidOffset)) {
+		t.Fatalf("expected 400 for offset=-1, got err=%v", err)
 	}
 }
 
@@ -672,15 +632,11 @@ func TestListLogEntriesInvalidAction(t *testing.T) {
 	s := New(newRecordingNoteStore(), newRecordingEventLog())
 
 	badAction := oapi.LogAction("invalid")
-	resp, err := s.ListLogEntries(context.Background(), oapi.ListLogEntriesRequestObject{
+	_, err := s.ListLogEntries(context.Background(), oapi.ListLogEntriesRequestObject{
 		Params: oapi.ListLogEntriesParams{Action: &badAction},
 	})
-	if err != nil {
-		t.Fatalf("ListLogEntries: %v", err)
-	}
-	_, ok := resp.(listLogEntries400Response)
-	if !ok {
-		t.Fatalf("expected 400 for invalid action, got %T", resp)
+	if !errors.As(err, new(*ErrInvalidLogAction)) {
+		t.Fatalf("expected 400 for invalid action, got err=%v", err)
 	}
 }
 
@@ -688,14 +644,10 @@ func TestListLogEntriesInvalidSession(t *testing.T) {
 	s := New(newRecordingNoteStore(), newRecordingEventLog())
 
 	badSession := oapi.PomodoroState("invalid")
-	resp, err := s.ListLogEntries(context.Background(), oapi.ListLogEntriesRequestObject{
+	_, err := s.ListLogEntries(context.Background(), oapi.ListLogEntriesRequestObject{
 		Params: oapi.ListLogEntriesParams{Session: &badSession},
 	})
-	if err != nil {
-		t.Fatalf("ListLogEntries: %v", err)
-	}
-	_, ok := resp.(listLogEntries400Response)
-	if !ok {
-		t.Fatalf("expected 400 for invalid session, got %T", resp)
+	if !errors.As(err, new(*ErrInvalidSession)) {
+		t.Fatalf("expected 400 for invalid session, got err=%v", err)
 	}
 }

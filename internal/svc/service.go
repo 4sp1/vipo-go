@@ -2,10 +2,8 @@ package svc
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	nethttp "net/http"
 	"time"
 
 	adaptLog "github.com/4sp1/vipo-go/internal/adapter/state/log"
@@ -29,36 +27,14 @@ func New(notes adaptNote.Store, logs adaptLog.EventLog) *Service {
 // Compile-time check: Service satisfies StrictServerInterface.
 var _ oapi.StrictServerInterface = (*Service)(nil)
 
-type listNotes400Response struct {
-	message string
-}
-
-func (r listNotes400Response) VisitListNotesResponse(w nethttp.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-	return json.NewEncoder(w).Encode(oapi.Error{Message: r.message})
-}
-
-type listLogEntries400Response struct {
-	message string
-}
-
-func (r listLogEntries400Response) VisitListLogEntriesResponse(w nethttp.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-	return json.NewEncoder(w).Encode(oapi.Error{Message: r.message})
-}
-
 func (s *Service) CreateNote(ctx context.Context, req oapi.CreateNoteRequestObject) (oapi.CreateNoteResponseObject, error) {
 	if req.Body == nil {
-		return oapi.CreateNote400JSONResponse{Message: "missing request body"}, nil
+		return nil, &ErrInvalidRequest{Message: "missing request body"}
 	}
 
 	ps, err := xlate.PomodoroStateToDomain(req.Body.PomodoroState)
 	if err != nil {
-		return oapi.CreateNote400JSONResponse{
-			Message: fmt.Sprintf("invalid pomodoro_state: %s", req.Body.PomodoroState),
-		}, nil
+		return nil, &ErrInvalidPomodoroState{Value: string(req.Body.PomodoroState)}
 	}
 
 	n := domnote.State{
@@ -89,7 +65,7 @@ func (s *Service) GetNote(ctx context.Context, req oapi.GetNoteRequestObject) (o
 	n, err := s.notes.GetNote(ctx, domnote.ID(req.Id))
 	if err != nil {
 		if errors.Is(err, adaptNote.ErrNotFound) {
-			return oapi.GetNote404JSONResponse{Message: "note not found"}, nil
+			return nil, adaptNote.ErrNotFound
 		}
 		return nil, fmt.Errorf("get note: %w", err)
 	}
@@ -111,7 +87,7 @@ func (s *Service) DeleteNote(ctx context.Context, req oapi.DeleteNoteRequestObje
 	err := s.notes.DeleteNote(ctx, domnote.ID(req.Id))
 	if err != nil {
 		if errors.Is(err, adaptNote.ErrNotFound) {
-			return oapi.DeleteNote404JSONResponse{Message: "note not found"}, nil
+			return nil, adaptNote.ErrNotFound
 		}
 		return nil, fmt.Errorf("delete note: %w", err)
 	}
@@ -130,17 +106,17 @@ func (s *Service) ListNotes(ctx context.Context, req oapi.ListNotesRequestObject
 	}
 
 	if limit < 1 || limit > 100 {
-		return listNotes400Response{message: "limit must be between 1 and 100"}, nil
+		return nil, &ErrInvalidLimit{Value: limit}
 	}
 	if offset < 0 {
-		return listNotes400Response{message: "offset must be >= 0"}, nil
+		return nil, &ErrInvalidOffset{Value: offset}
 	}
 
 	var psFilter *pomodoro.State
 	if req.Params.PomodoroState != nil {
 		ps, err := xlate.PomodoroStateToDomain(*req.Params.PomodoroState)
 		if err != nil {
-			return listNotes400Response{message: fmt.Sprintf("invalid pomodoro_state: %s", *req.Params.PomodoroState)}, nil
+			return nil, &ErrInvalidPomodoroState{Value: string(*req.Params.PomodoroState)}
 		}
 		psFilter = &ps
 	}
@@ -177,21 +153,17 @@ func (s *Service) ListNotes(ctx context.Context, req oapi.ListNotesRequestObject
 
 func (s *Service) CreateLogEntry(ctx context.Context, req oapi.CreateLogEntryRequestObject) (oapi.CreateLogEntryResponseObject, error) {
 	if req.Body == nil {
-		return oapi.CreateLogEntry400JSONResponse{Message: "missing request body"}, nil
+		return nil, &ErrInvalidRequest{Message: "missing request body"}
 	}
 
 	action, err := xlate.LogActionToDomain(req.Body.Action)
 	if err != nil {
-		return oapi.CreateLogEntry400JSONResponse{
-			Message: fmt.Sprintf("invalid action: %s", req.Body.Action),
-		}, nil
+		return nil, &ErrInvalidLogAction{Value: string(req.Body.Action)}
 	}
 
 	session, err := xlate.SessionToDomain(req.Body.Session)
 	if err != nil {
-		return oapi.CreateLogEntry400JSONResponse{
-			Message: fmt.Sprintf("invalid session: %s", req.Body.Session),
-		}, nil
+		return nil, &ErrInvalidSession{Value: string(req.Body.Session)}
 	}
 
 	var payload map[string]any
@@ -245,17 +217,17 @@ func (s *Service) ListLogEntries(ctx context.Context, req oapi.ListLogEntriesReq
 	}
 
 	if limit < 1 || limit > 100 {
-		return listLogEntries400Response{message: "limit must be between 1 and 100"}, nil
+		return nil, &ErrInvalidLimit{Value: limit}
 	}
 	if offset < 0 {
-		return listLogEntries400Response{message: "offset must be >= 0"}, nil
+		return nil, &ErrInvalidOffset{Value: offset}
 	}
 
 	var actionFilter *domlog.Action
 	if req.Params.Action != nil {
 		action, err := xlate.LogActionToDomain(*req.Params.Action)
 		if err != nil {
-			return listLogEntries400Response{message: fmt.Sprintf("invalid action: %s", *req.Params.Action)}, nil
+			return nil, &ErrInvalidLogAction{Value: string(*req.Params.Action)}
 		}
 		actionFilter = &action
 	}
@@ -264,7 +236,7 @@ func (s *Service) ListLogEntries(ctx context.Context, req oapi.ListLogEntriesReq
 	if req.Params.Session != nil {
 		session, err := xlate.SessionToDomain(*req.Params.Session)
 		if err != nil {
-			return listLogEntries400Response{message: fmt.Sprintf("invalid session: %s", *req.Params.Session)}, nil
+			return nil, &ErrInvalidSession{Value: string(*req.Params.Session)}
 		}
 		sessionFilter = &session
 	}

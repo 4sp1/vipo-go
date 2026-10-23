@@ -55,10 +55,11 @@ jj new                   # Start new change after commit
 
 ## Database & Migrations
 
-- **Migration tool:** Atlas — `migrations/` dir with `.sql` files + `atlas.sum` checksum.
+- **Migration tool:** Goose v3 — `migrations/` dir with `.sql` files using `-- +goose Up`/`-- +goose Down` annotations.
+- **In-app runner:** `goose.NewProvider(goose.DialectSQLite3, db, fsys)` + `provider.Up(ctx)` runs on startup via `DB.Migrate(ctx)`. Migrations are embedded via `//go:embed` in `migrations/embed.go`.
 - **Tables:** `notes (id INTEGER PK AUTOINCREMENT, note TEXT NOT NULL, pomodoro_state INTEGER NOT NULL, created_at INTEGER NOT NULL)` and `log_entries (id INTEGER PK AUTOINCREMENT, action INTEGER NOT NULL, session INTEGER NOT NULL, payload TEXT NOT NULL, timestamp INTEGER NOT NULL)`.
 - Timestamps are Unix seconds stored as `INTEGER` in both tables.
-- Database files are opened via `sql.Open("sqlite", file)` — no migration runner in-app; migrations are managed externally.
+- Database files are opened via `sql.Open("sqlite", file)` in `port/state/sqlite/db.go`; the `*DB` wrapper exposes `NoteStore()`, `EventLog()`, and `Migrate(ctx)`.
 
 ## API Design (openapi.json)
 

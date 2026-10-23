@@ -2,10 +2,13 @@ package log
 
 import "time"
 
+type ID int64
+
 type Entry struct {
+	ID        ID
 	Action    Action
 	Session   Session
-	Payload   Message
+	Payload   map[string]any
 	Timestamp time.Time
 }
 
@@ -19,7 +22,6 @@ const (
 	ActionExpire
 	ActionResume
 	ActionSelect
-	ActionNewNote
 )
 
 type Session int
@@ -30,13 +32,3 @@ const (
 	SessionShortBreak
 	SessionLongBreak
 )
-
-type Message interface {
-	isMessage()
-}
-
-type MessageNewNote struct {
-	Note string
-}
-
-func (m MessageNewNote) isMessage() {}

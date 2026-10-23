@@ -1,6 +1,6 @@
 # Wire the HTTP server (notes + logs)
 
-Closes #22. Refs #23 (follow-up: payload semantics).
+Closes #22. Refs #26 (follow-up: payload semantics).
 
 ## Summary
 

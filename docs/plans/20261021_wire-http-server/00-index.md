@@ -10,7 +10,7 @@
 
 **Decisions doc:** `docs/drafts/20261021_wire_http_server_decisions.md` — all settled decisions with tag legend `[S1]`–`[S24]`.
 
-**Pre-execution:** File `docs/issues/23.md` — "Investigate payload semantics via e2e + update OAPI spec" (referenced by [S22]).
+**Pre-execution:** File `docs/issues/26.md` — "Investigate payload semantics via e2e + update OAPI spec" (referenced by [S22]).
 
 ---
 

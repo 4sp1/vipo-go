@@ -942,14 +942,14 @@ Refs #22
 
 ---
 
-### Task 6: File issue 23 for payload future work
+### Task 6: File issue 26 for payload future work
 
 **Files:**
-- Create: `docs/issues/23.md`
+- Create: `docs/issues/26.md`
 
 - [ ] **Step 1: Write the issue**
 
-Create `docs/issues/23.md`:
+Create `docs/issues/26.md`:
 
 ```markdown
 # Investigate payload semantics via e2e + update OAPI spec
@@ -983,12 +983,12 @@ Gap 2 in `docs/drafts/20261012_openapi_gaps.md`.
 3. Write the commit message to the temp file:
 
 ```
-docs(issues): file #23 for payload semantics
+docs(issues): file #26 for payload semantics
 
 Deferred from wire-http-server plan [S11]. Track
 payload spec investigation post-e2e. [S22]
 
-Refs #22, #23
+Refs #22, #26
 ```
 
 4. `jj describe --stdin < "/tmp/tmp.XXXXXX" && rm "/tmp/tmp.XXXXXX" && jj new`

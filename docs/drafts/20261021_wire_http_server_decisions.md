@@ -105,7 +105,7 @@ adapter-side record type or double translation.
 **[S11 future work]** The real issue is the OAPI spec under-specifies
 `payload`. Revisiting the spec (and the layer decoupling) is deferred until
 payload semantics are understood via e2e testing. Tracked as a new issue
-(`docs/issues/23.md`, to be filed) — see [S22].
+(`docs/issues/26.md`, to be filed) — see [S22].
 
 **[S12] `AddNote` returns the id.** Signature becomes
 `AddNote(ctx, note.State) (note.ID, error)`. The svc sets
@@ -219,7 +219,7 @@ independent; 02 needs 01; 04 needs 01+02; 05 needs 04 (wiring) but its
 cobra/viper part is independent of 04's svc logic; 06 needs 05. Each batch is
 the safe unit for one concurrent session; same-file edits stay within a batch.
 
-**[S22] Payload future-work issue.** A new `docs/issues/23.md` —
+**[S22] Payload future-work issue.** A new `docs/issues/26.md` —
 "Investigate payload semantics via e2e + update OAPI spec" — is filed as a
 tracked issue and referenced by the plan's `00-index.md`. The deferral is
 visible in the backlog, not buried in an executed plan. Rationale: the OAPI

@@ -1,3 +1,4 @@
+-- +goose Up
 CREATE TABLE log_entries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     action INTEGER NOT NULL,
@@ -5,3 +6,6 @@ CREATE TABLE log_entries (
     payload TEXT NOT NULL,
     timestamp INTEGER NOT NULL
 );
+
+-- +goose Down
+DROP TABLE log_entries;

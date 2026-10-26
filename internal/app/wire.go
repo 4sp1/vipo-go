@@ -34,5 +34,5 @@ func NewHandler(s *svc.Service) http.Handler {
 		},
 	})
 
-	return oapi.Handler(strictHandler)
+	return LoggingMiddleware(oapi.Handler(strictHandler))
 }

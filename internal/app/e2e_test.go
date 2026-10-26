@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"log/slog"
+	"strings"
 	"testing"
 
 	oapi "github.com/4sp1/vipo-go/internal/port/oapi"
@@ -523,5 +525,28 @@ func TestE2EListLogEntriesCombinedFilters(t *testing.T) {
 	}
 	if *list.Total != 1 {
 		t.Errorf("Total = %d, want 1", *list.Total)
+	}
+}
+
+func TestDebugModeLogsBodiesE2E(t *testing.T) {
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	defer slog.SetDefault(prev)
+
+	srv := setupTestServer(t)
+
+	body := `{"note":"e2e-knock","pomodoro_state":"work"}`
+	req := httptest.NewRequest(http.MethodPost, "/notes", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	srv.Handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want 201 (body: %s)", rec.Code, rec.Body.String())
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, `"msg":"http access"`) || !strings.Contains(out, `"msg":"http request body"`) {
+		t.Errorf("debug mode missing access/body lines, got:\n%s", out)
 	}
 }

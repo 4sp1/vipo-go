@@ -1,6 +1,6 @@
 # 02 — HTTP middleware with debug-only body capture (issue 27) Sub-plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use `complete-plan-execution` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `complete-plan-execution` to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** One logging middleware on `srv.Handler` in `internal/app/wire.go` that logs access metadata (`method`, `path`, `status`, `duration`) for every request including unmatched routes, plus request/response bodies at debug level only.
 
@@ -19,7 +19,7 @@ Anti-leak decision consequence, recorded here to avoid relitigating: access meta
 - Test: `internal/app/logging_test.go` (create)
 - Modify: `internal/app/wire.go` (wiring, 1 line)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `internal/app/logging_test.go`:
 
@@ -119,7 +119,7 @@ to
 Run: `go build ./...`
 Expected: FAIL with `undefined: LoggingMiddleware` (this is the red we want before writing code).
 
-- [ ] **Step 2: Write minimal implementation**
+- [x] **Step 2: Write minimal implementation**
 
 Create `internal/app/logging.go`:
 
@@ -209,12 +209,12 @@ func accessRecorderFrom(w http.ResponseWriter) *accessRecorder {
 
 In `internal/app/wire.go` change the return of `NewHandler` to `return LoggingMiddleware(oapi.Handler(strictHandler))` (if not already done in Step 1).
 
-- [ ] **Step 3: Run test to verify it passes**
+- [x] **Step 3: Run test to verify it passes**
 
 Run: `go test ./internal/app/ -run 'TestMiddleware' -v && go build ./...`
 Expected: PASS.
 
-- [ ] **Step 4: Commit with caveman-commit**
+- [x] **Step 4: Commit with caveman-commit**
 
 Use `caveman-commit` for the message content, then the commit sequence from `core-commands` (mktemp → Read temp file → Write message → `jj describe --stdin < "/tmp/tmp.XXXXXX" && rm "/tmp/tmp.XXXXXX" && jj new`).
 
@@ -228,7 +228,7 @@ Message sketch: `feat(app): http access middleware` (subject ≤50 chars).
 - Modify: `internal/app/logging_test.go`
 - (behavior under test in `internal/app/logging.go`, already implemented)
 
-- [ ] **Step 1: Write the failing tests (they enforce bodies at debug and silence above)**
+- [x] **Step 1: Write the failing tests (they enforce bodies at debug and silence above)**
 
 Append to `internal/app/logging_test.go`:
 
@@ -301,17 +301,17 @@ func TestMiddlewareErrorBodyAtDebugHierarchy(t *testing.T) {
 
 Note: the body tests assert via `slog.TextHandler` output, which quotes values; `strings.Contains` of the single-line JSON payload is still exact and sufficient here.
 
-- [ ] **Step 2: Run tests**
+- [x] **Step 2: Run tests**
 
 Run: `go test ./internal/app/ -run 'TestMiddleware' -v`
 Expected: PASS (implementation already supports both).
 
-- [ ] **Step 3: Full suite**
+- [x] **Step 3: Full suite**
 
 Run: `go test ./... -count=1 && go vet ./...`
 Expected: PASS. Address any test in `internal/app/e2e_test.go` that now logs into the test console (existing tests may now emit `http access` lines per request; that is harmless on stdout during tests, silence them by leaving default level alone).
 
-- [ ] **Step 4: Commit with caveman-commit**
+- [x] **Step 4: Commit with caveman-commit**
 
 Use `caveman-commit` then the `core-commands` commit sequence (mktemp → Read temp file → Write message → `jj describe --stdin < "/tmp/tmp.XXXXXX" && rm "/tmp/tmp.XXXXXX" && jj new`).
 
@@ -324,7 +324,7 @@ Message sketch: `test(app): bodies debug-only assertions` (subject ≤50 chars).
 **Files:**
 - Test: `internal/app/e2e_test.go` (modify; append one test)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `internal/app/e2e_test.go`:
 
@@ -355,17 +355,17 @@ func TestDebugModeLogsBodiesE2E(t *testing.T) {
 
 If `e2e_test.go` does not already import `bytes`, `log/slog`, `net/http/httptest`, `strings`, add these imports.
 
-- [ ] **Step 2: Run test to verify it passes**
+- [x] **Step 2: Run test to verify it passes**
 
 Run: `go test ./internal/app/ -run 'TestDebugModeLogsBodiesE2E' -v`
 Expected: PASS (the middleware, wired into `srv.Handler` by `wire.go`, already produces these lines; this test keeps AC 4 + AC 6 pinned at the real handler boundary).
 
-- [ ] **Step 3: Full suite**
+- [x] **Step 3: Full suite**
 
 Run: `go test ./... -count=1`
 Expected: PASS.
 
-- [ ] **Step 4: Commit with caveman-commit**
+- [x] **Step 4: Commit with caveman-commit**
 
 Use `caveman-commit` then the `core-commands` commit sequence (mktemp → Read temp file → Write message → `jj describe --stdin < "/tmp/tmp.XXXXXX" && rm "/tmp/tmp.XXXXXX" && jj new`).
 

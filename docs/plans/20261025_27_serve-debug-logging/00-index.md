@@ -1,6 +1,6 @@
 # serve --debug / --log-level (issue 27) — Index
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use `complete-plan-execution` to implement each sub-plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `complete-plan-execution` to implement each sub-plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Add `--debug` / `--log-level` flags to `vipo-server serve` and make the HTTP, service, and storage layers observable via stdlib `slog` (JSON on stderr, warn default, anti-leak split).
 
@@ -10,9 +10,9 @@ Complexity gate: fired (estimated >600 single-file lines); split approved during
 
 Sub-plans (execution order):
 
-- [ ] 01-config-and-lifecycle.md — cmd flags, level resolution, lifecycle lines, doc fixes
-- [ ] 02-http-middleware.md — access middleware with debug-only body capture in `internal/app`
-- [ ] 03-svc-storage-debug.md — `slog.Debug` call sites in svc and sqlite stores
+- [x] 01-config-and-lifecycle.md — cmd flags, level resolution, lifecycle lines, doc fixes
+- [x] 02-http-middleware.md — access middleware with debug-only body capture in `internal/app`
+- [x] 03-svc-storage-debug.md — `slog.Debug` call sites in svc and sqlite stores
 
 Concurrent-eligible batches: `[01-config-and-lifecycle, 02-http-middleware, 03-svc-storage-debug]` — all three are concurrent-eligible together: they touch disjoint files (`cmd/vipo-server/`, `internal/app/`, `internal/svc/` + `internal/port/state/sqlite/`), and each is independently verified by `go test ./...`.
 

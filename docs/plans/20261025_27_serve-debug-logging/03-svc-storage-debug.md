@@ -1,6 +1,6 @@
 # 03 — Service and storage debug call sites (issue 27) Sub-plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use `complete-plan-execution` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `complete-plan-execution` to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** `slog.Debug` diagnostics at the entry of every public svc handler and every sqlite store method, asserted by tests that also prove silence at the warn default (anti-leak, AC 6).
 
@@ -27,7 +27,7 @@ Exact call sites (the enumeration agreed in the grill):
 - Modify: `internal/svc/service.go`
 - Test: `internal/svc/service_test.go` (append)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `internal/svc/service_test.go` (reuse whatever constructor helpers the file already uses for `svc.New`; below uses the real stores via `sqlite.New(":memory:")` + `Migrate`, mirroring `internal/app/testdb_helper_test.go`):
 
@@ -99,12 +99,12 @@ func TestSvcSilentAtWarnDefault(t *testing.T) {
 
 Add the imports the file lacks: `"bytes"`, `"log/slog"`, `"strings"`, `"github.com/4sp1/vipo-go/internal/port/state/sqlite"` (the file already imports `oapi` and `context` under those aliases — reuse them exactly; no `pomodoro`/`xlate` needed since the tests pass string values).
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./internal/svc/ -run 'TestSvc' -v`
 Expected: FAIL — no debug diagnostic lines yet.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 In `internal/svc/service.go`, add `"log/slog"` to imports and insert one line at the top of each handler (directly after the opening brace):
 
@@ -140,12 +140,12 @@ slog.Debug("svc: ListLogEntries", "limit", req.Params.Limit, "offset", req.Param
 
 Rationale for the guards: `CreateNote`/`CreateLogEntry` read `req.Body` fields after a nil check, so the entry line logs nothing about the body (bodies belong to the HTTP middleware capture); list handlers dereference `req.Params` freely because generated defaults populate it.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `go test ./internal/svc/ -v && go build ./...`
 Expected: PASS.
 
-- [ ] **Step 5: Commit with caveman-commit**
+- [x] **Step 5: Commit with caveman-commit**
 
 Use `caveman-commit` for the message content, then the commit sequence from `core-commands` (mktemp → Read temp file → Write message → `jj describe --stdin < "/tmp/tmp.XXXXXX" && rm "/tmp/tmp.XXXXXX" && jj new`).
 
@@ -160,7 +160,7 @@ Message sketch: `feat(svc): debug diagnostics per handler` (subject ≤50 chars)
 - Modify: `internal/port/state/sqlite/event_log.go`
 - Test: `internal/port/state/sqlite/note_store_test.go` (append)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `internal/port/state/sqlite/note_store_test.go` (the file already has `setupTestDB`):
 
@@ -195,12 +195,12 @@ func TestStorageEmitsDebugDiagnostics(t *testing.T) {
 
 Add imports the file lacks: `"bytes"`, `"log/slog"`, `"strings"` (existing file already imports `context`, `time`, `adaptNote`, `domnote`, `pomodoro`).
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./internal/port/state/sqlite/ -run 'TestStorage' -v`
 Expected: FAIL — no debug lines yet.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Add `"log/slog"` to the imports of both files. Insert one line at the top of each method:
 
@@ -232,12 +232,12 @@ func (el *eventLog) ListEntries(ctx context.Context, params adaptLog.ListParams)
 
 (Each line inserted as the first statement, after the opening brace; the shown signature line contextualizes placement, not a duplicate.)
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `go test ./internal/port/state/sqlite/ -v && go test ./... -count=1 && go vet ./...`
 Expected: PASS everywhere.
 
-- [ ] **Step 5: Commit with caveman-commit**
+- [x] **Step 5: Commit with caveman-commit**
 
 Use `caveman-commit` for the message content, then the commit sequence from `core-commands` (mktemp → Read temp file → Write message → `jj describe --stdin < "/tmp/tmp.XXXXXX" && rm "/tmp/tmp.XXXXXX" && jj new`).
 

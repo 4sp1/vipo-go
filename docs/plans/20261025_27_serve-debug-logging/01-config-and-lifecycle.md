@@ -1,6 +1,6 @@
 # 01 — Config and lifecycle (issue 27) Sub-plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use `complete-plan-execution` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `complete-plan-execution` to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** `serve` accepts `--debug` and `--log-level` (combo hard-fails), sets the global slog default (JSON → stderr, warn default, CLI-flags-only override), and the lifecycle lines move to `fmt.Println`.
 
@@ -16,7 +16,7 @@
 - Modify: `cmd/vipo-server/main.go`
 - Test: `cmd/vipo-server/main_test.go` (create)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `cmd/vipo-server/main_test.go`:
 
@@ -68,12 +68,12 @@ func TestResolveLogLevel(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./cmd/... -run TestResolveLogLevel -v`
 Expected: FAIL — `resolveLogLevel` (or `main_test.go`) does not exist / undefined.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 In `cmd/vipo-server/main.go`, add below `newRootCmd`:
 
@@ -109,12 +109,12 @@ func resolveLogLevel(debugChanged, debug bool, levelChanged bool, lvl string) (s
 
 Extend the imports in `cmd/vipo-server/main.go` to include `"errors"`, `"log/slog"` (keep the existing ones).
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `go test ./cmd/... -run TestResolveLogLevel -v`
 Expected: PASS (all subtests).
 
-- [ ] **Step 5: Commit with caveman-commit**
+- [x] **Step 5: Commit with caveman-commit**
 
 Use `caveman-commit` for the message content, then the commit sequence from `core-commands`:
 
@@ -133,7 +133,7 @@ Message sketch: `feat(serve): add log-level resolution` (subject ≤50 chars).
 - Modify: `cmd/vipo-server/main.go`
 - Test: existing `go test ./cmd/...` still passes; behavioral verification via flag wiring below.
 
-- [ ] **Step 1: Define the flags on `serve` (and `migrate`) — no viper binding**
+- [x] **Step 1: Define the flags on `serve` (and `migrate`) — no viper binding**
 
 In `cmd/vipo-server/main.go`, right after the existing `serve.Flags().String("addr", ...)` line, add:
 
@@ -147,7 +147,7 @@ In `cmd/vipo-server/main.go`, right after the existing `serve.Flags().String("ad
 
 Do NOT viper-bind these flags — `VIPD_LOG_LEVEL` and `VIPD_DEBUG` env vars must not set the level (decision from the grill session). The other flags (`db`, `addr`, `config`) keep their viper bindings.
 
-- [ ] **Step 2: Wire the level resolution + SetDefault into both RunE bodies, and swap lifecycle lines**
+- [x] **Step 2: Wire the level resolution + SetDefault into both RunE bodies, and swap lifecycle lines**
 
 At the top of `serve`'s `RunE` (before `app.NewServer`), add:
 
@@ -191,7 +191,7 @@ Remove the `"log"` import from `cmd/vipo-server/main.go` (cobra prints returned 
 
 Note: `c.Flags().Changed("log-level")` reflects the actual CLI (`--log-level` given or not); the flag's own default (`"warn"`) supplies the value when unchanged. Do NOT viper-bind these flags — `VIPD_LOG_LEVEL` and `VIPD_DEBUG` env vars must not set the level (decision from the grill session). The existing flags (`db`, `addr`, `config`) keep their viper bindings unchanged.
 
-- [ ] **Step 3: Run tests / build**
+- [x] **Step 3: Run tests / build**
 
 Run: `go build ./... && go test ./... -count=1`
 Expected: PASS everywhere.
@@ -206,7 +206,7 @@ go run ./cmd/vipo-server serve --debug --log-level=error
 # expect Error: --debug and --log-level are mutually exclusive; use only one
 ```
 
-- [ ] **Step 4: Commit with caveman-commit**
+- [x] **Step 4: Commit with caveman-commit**
 
 Use `caveman-commit` then the `core-commands` commit sequence: mktemp → Read temp file → Write message → `jj describe --stdin < "/tmp/tmp.XXXXXX" && rm "/tmp/tmp.XXXXXX" && jj new`.
 
@@ -222,7 +222,7 @@ Message sketch: `feat(serve): wire log level flags, lifecycle lines` (subject �
 
 The issue says storage call sites live in `internal/port/state/sqlite/port.go` — that file does not exist; storage call sites live in `note_store.go` and `event_log.go`.
 
-- [ ] **Step 1: Fix `docs/issues/27.md` line 12**
+- [x] **Step 1: Fix `docs/issues/27.md` line 12**
 
 Replace:
 
@@ -236,7 +236,7 @@ with:
 - **Layers logged:** HTTP (one middleware on `srv.Handler` in `internal/app/wire.go`), service (call sites in `internal/svc`), storage (call sites in `internal/port/state/sqlite/note_store.go` and `event_log.go`).
 ```
 
-- [ ] **Step 2: Fix `docs/drafts/22.md` lines 48-49**
+- [x] **Step 2: Fix `docs/drafts/22.md` lines 48-49**
 
 Replace:
 
@@ -255,12 +255,12 @@ with:
 
 (keep the rest of the paragraph intact).
 
-- [ ] **Step 3: Run the full suite**
+- [x] **Step 3: Run the full suite**
 
 Run: `go test ./... -count=1`
 Expected: PASS (docs-only change; sanity check nothing else broken).
 
-- [ ] **Step 4: Commit with caveman-commit**
+- [x] **Step 4: Commit with caveman-commit**
 
 Use `caveman-commit` then the `core-commands` commit sequence (mktemp → Read → Write → `jj describe --stdin < "/tmp/tmp.XXXXXX" && rm "/tmp/tmp.XXXXXX" && jj new`).
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	adaptLog "github.com/4sp1/vipo-go/internal/adapter/state/log"
@@ -28,6 +29,8 @@ func New(notes adaptNote.Store, logs adaptLog.EventLog) *Service {
 var _ oapi.StrictServerInterface = (*Service)(nil)
 
 func (s *Service) CreateNote(ctx context.Context, req oapi.CreateNoteRequestObject) (oapi.CreateNoteResponseObject, error) {
+	slog.Debug("svc: CreateNote")
+
 	if req.Body == nil {
 		return nil, &ErrInvalidRequest{Message: "missing request body"}
 	}
@@ -62,6 +65,8 @@ func (s *Service) CreateNote(ctx context.Context, req oapi.CreateNoteRequestObje
 }
 
 func (s *Service) GetNote(ctx context.Context, req oapi.GetNoteRequestObject) (oapi.GetNoteResponseObject, error) {
+	slog.Debug("svc: GetNote", "id", req.Id)
+
 	n, err := s.notes.GetNote(ctx, domnote.ID(req.Id))
 	if err != nil {
 		if errors.Is(err, adaptNote.ErrNotFound) {
@@ -84,6 +89,8 @@ func (s *Service) GetNote(ctx context.Context, req oapi.GetNoteRequestObject) (o
 }
 
 func (s *Service) DeleteNote(ctx context.Context, req oapi.DeleteNoteRequestObject) (oapi.DeleteNoteResponseObject, error) {
+	slog.Debug("svc: DeleteNote", "id", req.Id)
+
 	err := s.notes.DeleteNote(ctx, domnote.ID(req.Id))
 	if err != nil {
 		if errors.Is(err, adaptNote.ErrNotFound) {
@@ -96,6 +103,8 @@ func (s *Service) DeleteNote(ctx context.Context, req oapi.DeleteNoteRequestObje
 }
 
 func (s *Service) ListNotes(ctx context.Context, req oapi.ListNotesRequestObject) (oapi.ListNotesResponseObject, error) {
+	slog.Debug("svc: ListNotes", "limit", req.Params.Limit, "offset", req.Params.Offset)
+
 	limit := 50
 	if req.Params.Limit != nil {
 		limit = *req.Params.Limit
@@ -152,6 +161,8 @@ func (s *Service) ListNotes(ctx context.Context, req oapi.ListNotesRequestObject
 }
 
 func (s *Service) CreateLogEntry(ctx context.Context, req oapi.CreateLogEntryRequestObject) (oapi.CreateLogEntryResponseObject, error) {
+	slog.Debug("svc: CreateLogEntry")
+
 	if req.Body == nil {
 		return nil, &ErrInvalidRequest{Message: "missing request body"}
 	}
@@ -207,6 +218,8 @@ func (s *Service) CreateLogEntry(ctx context.Context, req oapi.CreateLogEntryReq
 }
 
 func (s *Service) ListLogEntries(ctx context.Context, req oapi.ListLogEntriesRequestObject) (oapi.ListLogEntriesResponseObject, error) {
+	slog.Debug("svc: ListLogEntries", "limit", req.Params.Limit, "offset", req.Params.Offset, "action", req.Params.Action, "session", req.Params.Session)
+
 	limit := 50
 	if req.Params.Limit != nil {
 		limit = *req.Params.Limit

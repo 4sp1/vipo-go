@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -17,6 +18,8 @@ type eventLog struct {
 }
 
 func (el *eventLog) AddEntry(ctx context.Context, entry domlog.Entry) (domlog.ID, error) {
+	slog.Debug("sqlite: AddEntry", "action", int(entry.Action), "session", int(entry.Session), "timestamp", entry.Timestamp.Unix())
+
 	var payloadBytes []byte
 	var err error
 	if entry.Payload != nil {
@@ -44,6 +47,8 @@ func (el *eventLog) AddEntry(ctx context.Context, entry domlog.Entry) (domlog.ID
 }
 
 func (el *eventLog) ListEntries(ctx context.Context, params adaptLog.ListParams) (adaptLog.EntryList, error) {
+	slog.Debug("sqlite: ListEntries", "limit", params.Limit, "offset", params.Offset, "has_action", params.Action != nil, "has_session", params.Session != nil)
+
 	var conditions []string
 	var args []any
 

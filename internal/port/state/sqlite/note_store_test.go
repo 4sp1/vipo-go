@@ -1,8 +1,11 @@
 package sqlite
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
+	"strings"
 	"testing"
 	"time"
 
@@ -208,5 +211,32 @@ func TestNoteStoreListNotesEmpty(t *testing.T) {
 	}
 	if list.Total != 0 {
 		t.Errorf("Total = %d, want 0", list.Total)
+	}
+}
+
+func TestStorageEmitsDebugDiagnostics(t *testing.T) {
+	db := setupTestDB(t)
+	ns := db.NoteStore()
+
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	defer slog.SetDefault(prev)
+
+	n := domnote.State{
+		Note:      "storage-log",
+		Pomodoro:  pomodoro.Work,
+		CreatedAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+	}
+	_, _ = ns.AddNote(context.Background(), n)
+	_, _ = ns.GetNote(context.Background(), 1)
+	_ = ns.DeleteNote(context.Background(), 1)
+	_, _ = ns.ListNotes(context.Background(), adaptNote.ListParams{Limit: 10, Offset: 0})
+
+	out := buf.String()
+	for _, want := range []string{"sqlite: AddNote", "sqlite: GetNote", "sqlite: DeleteNote", "sqlite: ListNotes"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("storage diagnostics missing %q, got:\n%s", want, out)
+		}
 	}
 }

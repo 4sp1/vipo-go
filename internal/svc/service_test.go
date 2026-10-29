@@ -1,8 +1,11 @@
 package svc
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,6 +15,7 @@ import (
 	domnote "github.com/4sp1/vipo-go/internal/domain/state/note"
 	"github.com/4sp1/vipo-go/internal/domain/state/pomodoro"
 	oapi "github.com/4sp1/vipo-go/internal/port/oapi"
+	"github.com/4sp1/vipo-go/internal/port/state/sqlite"
 )
 
 type recordingNoteStore struct {
@@ -788,5 +792,66 @@ func TestListLogEntriesLimitBoundary(t *testing.T) {
 	}
 	if _, ok := resp.(oapi.ListLogEntries200JSONResponse); !ok {
 		t.Fatalf("expected 200, got %T", resp)
+	}
+}
+
+func captureSvcDebug(t *testing.T) (*bytes.Buffer, func()) {
+	t.Helper()
+	var buf bytes.Buffer
+	prev := slog.Default()
+	handler := slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	slog.SetDefault(handler)
+	return &buf, func() { slog.SetDefault(prev) }
+}
+
+func svcWithTestDB(t *testing.T) *Service {
+	t.Helper()
+	db, err := sqlite.New(":memory:")
+	if err != nil {
+		t.Fatalf("sqlite.New: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	if err := db.Migrate(context.Background()); err != nil {
+		t.Fatalf("Migrate: %v", err)
+	}
+	return New(db.NoteStore(), db.EventLog())
+}
+
+func TestSvcEmitsDebugDiagnostics(t *testing.T) {
+	svcObj := svcWithTestDB(t)
+
+	buf, restore := captureSvcDebug(t)
+	defer restore()
+
+	psBody := oapi.PomodoroState("work")
+	_, _ = svcObj.CreateNote(context.Background(), oapi.CreateNoteRequestObject{
+		Body: &oapi.CreateNoteJSONRequestBody{Note: "svc-log", PomodoroState: psBody},
+	})
+	_, _ = svcObj.ListNotes(context.Background(), oapi.ListNotesRequestObject{})
+	_, _ = svcObj.ListLogEntries(context.Background(), oapi.ListLogEntriesRequestObject{})
+
+	out := buf.String()
+	for _, want := range []string{"svc: CreateNote", "svc: ListNotes", "svc: ListLogEntries"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("debug diagnostics missing %q, got:\n%s", want, out)
+		}
+	}
+}
+
+func TestSvcSilentAtWarnDefault(t *testing.T) {
+	svcObj := svcWithTestDB(t)
+
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelWarn})))
+	defer slog.SetDefault(prev)
+
+	psBody := oapi.PomodoroState("work")
+	_, _ = svcObj.CreateNote(context.Background(), oapi.CreateNoteRequestObject{
+		Body: &oapi.CreateNoteJSONRequestBody{Note: "quiet", PomodoroState: psBody},
+	})
+
+	if buf.Len() != 0 {
+		t.Errorf("svc must be silent at warn default, got:\n%s", buf.String())
 	}
 }

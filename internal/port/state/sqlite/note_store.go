@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	adaptNote "github.com/4sp1/vipo-go/internal/adapter/state/note"
@@ -16,6 +17,8 @@ type noteStore struct {
 }
 
 func (s *noteStore) AddNote(ctx context.Context, n domnote.State) (domnote.ID, error) {
+	slog.Debug("sqlite: AddNote", "pomodoro_state", int(n.Pomodoro), "created_at", n.CreatedAt.Unix())
+
 	result, err := s.db.ExecContext(ctx,
 		"INSERT INTO notes (note, pomodoro_state, created_at) VALUES (?, ?, ?)",
 		n.Note, int(n.Pomodoro), n.CreatedAt.Unix(),
@@ -31,6 +34,8 @@ func (s *noteStore) AddNote(ctx context.Context, n domnote.State) (domnote.ID, e
 }
 
 func (s *noteStore) ListNotes(ctx context.Context, params adaptNote.ListParams) (adaptNote.List, error) {
+	slog.Debug("sqlite: ListNotes", "limit", params.Limit, "offset", params.Offset, "has_filter", params.PomodoroState != nil)
+
 	whereClause := ""
 	args := []any{}
 
@@ -81,6 +86,8 @@ func (s *noteStore) ListNotes(ctx context.Context, params adaptNote.ListParams) 
 }
 
 func (s *noteStore) GetNote(ctx context.Context, id domnote.ID) (domnote.State, error) {
+	slog.Debug("sqlite: GetNote", "id", int64(id))
+
 	var n domnote.State
 	var pomodoroRaw, createdAtUnix int64
 
@@ -107,6 +114,8 @@ func (s *noteStore) GetNote(ctx context.Context, id domnote.ID) (domnote.State, 
 }
 
 func (s *noteStore) DeleteNote(ctx context.Context, id domnote.ID) error {
+	slog.Debug("sqlite: DeleteNote", "id", int64(id))
+
 	result, err := s.db.ExecContext(ctx, "DELETE FROM notes WHERE id = ?", id)
 	if err != nil {
 		return fmt.Errorf("delete note: %w", err)
